@@ -24,7 +24,7 @@ class POSCAR:
         self.I = I
         self.S = S
         self.Smatrix = Smatrix
-        self.ATOMS = OrderedDict()
+        self.atoms = OrderedDict()
         self.organize_by_atom()
 
         self.index_to_atom = {}
@@ -38,7 +38,7 @@ class POSCAR:
         for atom, num in self.atoms.items():
             idx += idx2
             idx2 += num
-            self.ATOMS[atom] = self.coord[idx:idx2]
+            self.atoms[atom] = self.coord[idx:idx2]
 
     def print_poscar(self, filename):
         file = open(filename, 'w')
@@ -64,7 +64,7 @@ class POSCAR:
 
     def get_max_height_of_atom(self, atom):
         # matrix
-        return max([i[2] for i in self.ATOMS[atom]])
+        return max([i[2] for i in self.atoms[atom]])
 
     def update_atom(self, atom):
         idx = 0
@@ -73,7 +73,7 @@ class POSCAR:
                 break
             else:
                 idx += self.atoms[i]
-        for i in self.ATOMS[atom]:
+        for i in self.atoms[atom]:
             self.coord[idx] = i
             idx += 1
 
