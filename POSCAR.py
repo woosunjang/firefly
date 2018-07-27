@@ -1,12 +1,9 @@
-#!/home/intern/python/Python-3.5.4/local/bin/python3
-
 from __future__ import division , print_function
-from collections import OrderedDict
-from collections import deque
+from collections import OrderedDict, deque
 import numpy as np
 
 
-class fileWriter:
+class FileWriter:
     def __init__(self, file):
         self.file = file
 
@@ -28,7 +25,7 @@ class POSCAR:
         self.S = S
         self.Smatrix = Smatrix
         self.ATOMS = OrderedDict()
-        self.organize_by_Atom()
+        self.organize_by_atom()
 
         self.index_to_atom = {}
         self.atom_to_index = {}
@@ -36,16 +33,16 @@ class POSCAR:
             self.index_to_atom[idx] = atm
             self.atom_to_index[atm] = idx
 
-    def organize_by_Atom(self):
+    def organize_by_atom(self):
         idx, idx2 = 0, 0
         for atom, num in self.atoms.items():
             idx += idx2
             idx2 += num
             self.ATOMS[atom] = self.coord[idx:idx2]
 
-    def print_POSCAR(self, filename):
+    def print_poscar(self, filename):
         file = open(filename, 'w')
-        f = fileWriter(file)
+        f = FileWriter(file)
         f.write(self.name)
         f.write(self.I)
         for i in self.lattice:
@@ -66,7 +63,7 @@ class POSCAR:
         f.close()
 
     def get_max_height_of_atom(self, atom):
-        ## matrix
+        # matrix
         return max([i[2] for i in self.ATOMS[atom]])
 
     def update_atom(self, atom):
@@ -81,16 +78,16 @@ class POSCAR:
             idx += 1
 
 
-def post_process(line_list, Selective, Direct, l_parameter):
+def post_process(line_list, selective, direct, l_parameter):
     coord = deque()
-    sel = deque() if Selective else None
-    if Selective:
+    sel = deque() if selective else None
+    if selective:
         for line in line_list:
             tmp = line.split()
             tmp_coord = np.array(list(map(float, tmp[:3])))
             if len(tmp_coord) == 0:
                 break
-            if Direct:
+            if direct:
 
                 coord.append(list(np.matmul(tmp_coord, l_parameter)))
             else:
@@ -101,7 +98,7 @@ def post_process(line_list, Selective, Direct, l_parameter):
             tmp_coord = np.array(list(map(float, line.split())))
             if len(tmp_coord) == 0:
                 break
-            if Direct:
+            if direct:
 
                 coord.append(list(np.matmul(tmp_coord, l_parameter)))
             else:
@@ -109,7 +106,7 @@ def post_process(line_list, Selective, Direct, l_parameter):
     return coord, sel
 
 
-def readPOSCAR(file):
+def read_poscar(file):
     line_list = file.read().splitlines()
     title = line_list[0]
     I = line_list[1]
@@ -120,15 +117,14 @@ def readPOSCAR(file):
     tmp = line_list[5].split(), list(map(int, line_list[6].split()))
     atoms = OrderedDict((tmp[0][i], tmp[1][i]) for i in range(len(tmp[0])))
 
-    Selective = False
+    selective = False
     if line_list[7].upper()[0] == 'S':
-        Selective = True
-    idx = 8 if Selective else 7
-    Direct = True if line_list[idx].upper()[0] == 'D' else False
+        selective = True
+    idx = 8 if selective else 7
+    direct = True if line_list[idx].upper()[0] == 'D' else False
 
-    coord, sel = post_process(line_list[idx + 1:], Selective, Direct, l_parameter)
+    coord, sel = post_process(line_list[idx + 1:], selective, direct, l_parameter)
     coord = [i for i in coord]
-    SelMatrix = [i for i in sel] if Selective else sel
+    selmatrix = [i for i in sel] if selective else sel
     file.close()
-    return POSCAR(atoms, coord, lattice, title, I, Selective, SelMatrix)
-
+    return POSCAR(atoms, coord, lattice, title, I, selective, selmatrix)
