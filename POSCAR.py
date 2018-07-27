@@ -1,4 +1,4 @@
-from __future__ import division , print_function
+from __future__ import division, print_function
 from collections import OrderedDict, deque
 import numpy as np
 
@@ -15,15 +15,15 @@ class FileWriter:
 
 
 class POSCAR:
-    def __init__(self, atoms, coord, lattice, name, I, S, Smatrix):
+    def __init__(self, atoms, coord, lattice, name, ii, ss, smatrix):
         self.atoms = atoms
         self.coord = coord
         self.lattice = lattice
         self.type = 'Cartesian'
         self.name = name
-        self.I = I
-        self.S = S
-        self.Smatrix = Smatrix
+        self.ii = ii
+        self.S = ss
+        self.Smatrix = smatrix
         self.atoms = OrderedDict()
         self.organize_by_atom()
 
@@ -44,7 +44,7 @@ class POSCAR:
         file = open(filename, 'w')
         f = FileWriter(file)
         f.write(self.name)
-        f.write(self.I)
+        f.write(self.ii)
         for i in self.lattice:
             f.write(" ".join(map(str, i)))
         f.write(" ".join(self.atoms.keys()))
@@ -109,7 +109,7 @@ def post_process(line_list, selective, direct, l_parameter):
 def read_poscar(file):
     line_list = file.read().splitlines()
     title = line_list[0]
-    I = line_list[1]
+    ii = line_list[1]
     lattice = [list(map(float, i.split())) for i in line_list[2:5]]
 
     l_parameter = np.array(lattice)
@@ -127,4 +127,4 @@ def read_poscar(file):
     coord = [i for i in coord]
     selmatrix = [i for i in sel] if selective else sel
     file.close()
-    return POSCAR(atoms, coord, lattice, title, I, selective, selmatrix)
+    return POSCAR(atoms, coord, lattice, title, ii, selective, selmatrix)
