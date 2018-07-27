@@ -1,4 +1,3 @@
-#!/home/intern/python/Python-3.5.4/local/bin/python3
 from abc import abstractmethod
 from copy import deepcopy
 from random import uniform

@@ -1,34 +1,34 @@
-#!/home/intern/python/Python-3.5.4/local/bin/python3
+#!/usr/local/bin/python
 
 from __future__ import division , print_function
-from POSCAR import POSCAR, readPOSCAR
+from POSCAR import POSCAR, read_poscar
 import B_C_M as BCM
 import numpy as np
 import POSCAR as POS
+import os
+import operator
 from random import uniform
 from numpy.linalg import inv
-import operator
 from subprocess import call
-import os
 from time import sleep
 
-# FF algo must be implemented
-PATH = os.getcwd()
-NUMNUM =0
-ori =  readPOSCAR(open('POSCAR_orig','r'))
-MAXHEIGHT = 0
-def do_DFT(POSCAR, INCAR):
-    global NUMNUM
-    ## run DFT cal in Kohn
-    ## abstract
+path = os.getcwd()
+numnum =0
+ori =  read_poscar(open('POSCAR_orig', 'r'))
+maxheight = 0
+
+
+def run_Dft(poscar, incar):
+    global numnum
+    # run DFT cal in Kohn
     call('mkdir TEST', shell= True)
     sleep(10)
-    move = 'cp job.ff POTCAR %s TEST/.'% (INCAR)
+    move = 'cp job.ff POTCAR %s TEST/.'% (incar)
     call(move, shell= True)
     sleep(10)
-    os.chdir(os.path.join(PATH, 'TEST'))
-    POSCAR.print_POSCAR('POSCAR')
-    incar = 'cp %s INCAR' %(INCAR)
+    os.chdir(os.path.join(path, 'TEST'))
+    poscar.print_poscar('POSCAR')
+    incar = 'cp %s INCAR' %(incar)
     call(incar, shell=True)
     sleep(10)
     call('qsub job.ff', shell= True)
@@ -43,8 +43,8 @@ def do_DFT(POSCAR, INCAR):
             L = fq.readline()
             while len(L) == 0:
                 fq.close()
-                POSCAR = BCM.getRandomStructure(ori, 'Bi', MAXHEIGHT)
-                POSCAR.print_POSCAR('POSCAR')
+                poscar = BCM.get_random_structure(ori, 'Bi', maxheight)
+                poscar.print_poscar('POSCAR')
                 call('rm finished', shell=True)
                 sleep(10)
                 call('qsub job.ff', shell=True)
@@ -62,12 +62,12 @@ def do_DFT(POSCAR, INCAR):
             ff = open('test')
             L = ff.readline().split()
             dft_val = float(L[-1])
-            CONTCAR = readPOSCAR(open("CONTCAR",'r'))
-            os.chdir(PATH)
-            newName = 'TEST_'+str(NUMNUM)
+            CONTCAR = read_poscar(open("CONTCAR", 'r'))
+            os.chdir(path)
+            newName = 'TEST_'+str(numnum)
             call('mv -f TEST '+ newName,shell=True)
             sleep(10)
-            NUMNUM+=1
+            numnum+=1
             ff.close()
             break
         sleep(30)
@@ -79,15 +79,15 @@ def optimize(POSCAR, TYPE, INCARS, INCAR_INDEX, first_step = True):
     # type 1 uses several
     # TODO 인카 여러개로 확장
     if TYPE is 0:
-        return do_DFT(POSCAR, INCARS[INCAR_INDEX])
+        return run_Dft(POSCAR, INCARS[INCAR_INDEX])
     else:
         f, s = 0,0
         if first_step:
             f, s = 0, 2
         else:
             f, s = 1,3
-        POSCAR,val  = do_DFT(POSCAR, INCARS[f])
-        return do_DFT(POSCAR, INCARS[s])
+        POSCAR,val  = run_Dft(POSCAR, INCARS[f])
+        return run_Dft(POSCAR, INCARS[s])
 
 
 class FFalgo:
@@ -96,7 +96,7 @@ class FFalgo:
         self.current_INCAR_IDX = 0
         self.optimize_type = type
 
-        self.origin = readPOSCAR(open(OrginPOSCAR,'r'))
+        self.origin = read_poscar(open(OrginPOSCAR, 'r'))
 
         BCM.minimum_distance_matrix= BCM.default_minimum_distance(self.origin.index_to_atom)
 
@@ -104,8 +104,8 @@ class FFalgo:
         self.maxheight = self.origin.get_max_height_of_atom(maxheight_atom)
         self.maxheight_limit = 4 + self.maxheight# 4angstrom
 
-        global MAXHEIGHT
-        MAXHEIGHT = self.maxheight
+        global maxheight
+        maxheight = self.maxheight
 
         self.POSCARS = []
         self.coeffs = []
@@ -120,11 +120,11 @@ class FFalgo:
         self.POSCARS = [None for i in range(maxpop)]
 
     def makerandomStructures(self,idx):
-        new_POSCAR = BCM.getRandomStructure(self.origin, self.atom, self.maxheight)
+        new_POSCAR = BCM.get_random_structure(self.origin, self.atom, self.maxheight)
         self.POSCARS[idx] = [new_POSCAR, 0]
 
     def movement_coords_FF(self,atom1, atom2):
-        dis = BCM.getDistance(atom1, atom2)
+        dis = BCM.getdistance(atom1, atom2)
         value = self.coeffs[1] * np.exp(-self.coeffs[2]*dis*dis)
         L = [0,0,0]
         for i in range(3):
@@ -167,14 +167,14 @@ class FFalgo:
                     new_coords = self.move_add_randomness(new_coord_orig)
                 for j in range(i):
                     L = POSCAR.ATOMS[self.atom][j]
-                    if BCM.getDistance(L, new_coords) <= BCM.minimum_distance_matrix[atom_idx][atom_idx]:
+                    if BCM.getdistance(L, new_coords) <= BCM.minimum_distance_matrix[atom_idx][atom_idx]:
                         UNCHANGED = False
                         break
 
                     # Change
                     L = np.array(L)
                     for newCORD in [L + i for i in dxdy]:
-                        if BCM.getDistance(newCORD, new_coords) <= BCM.minimum_distance_matrix[atom_idx][atom_idx]:
+                        if BCM.getdistance(newCORD, new_coords) <= BCM.minimum_distance_matrix[atom_idx][atom_idx]:
                             UNCHANGED = False
                             break
                     else:
@@ -189,7 +189,7 @@ class FFalgo:
                     for ATOM_SYMBOl in atom_list_without_atom:
                         BREAK = False
                         for k in POSCAR.ATOMS[ATOM_SYMBOl]:
-                            if BCM.getDistance(k, new_coords) <= BCM.minimum_distance_matrix[atom_idx][
+                            if BCM.getdistance(k, new_coords) <= BCM.minimum_distance_matrix[atom_idx][
                                 POSCAR.atom_to_index[ATOM_SYMBOl]]:
                                 UNCHANGED = False
                                 break
@@ -197,7 +197,7 @@ class FFalgo:
                             # Change
                             new_k = np.array(k)
                             for newKCORD in [new_k + i for i in dxdy]:
-                                if BCM.getDistance(newKCORD, new_coords) <= BCM.minimum_distance_matrix[atom_idx][
+                                if BCM.getdistance(newKCORD, new_coords) <= BCM.minimum_distance_matrix[atom_idx][
                                     POSCAR.atom_to_index[ATOM_SYMBOl]]:
                                     UNCHANGED = False
                                     break
@@ -260,7 +260,7 @@ class FFalgo:
                 name = 'POSCAR_result_'+ str(Num_POSCAR)
                 Num_POSCAR+=1
                 OutPutList_value.append((name, self.POSCARS[i][1]))
-                self.POSCARS[i][0].print_POSCAR(name)
+                self.POSCARS[i][0].print_poscar(name)
                 self.makerandomStructures(idx_Value_List[i][0])
                 self.POSCAR_optimize(first_step,i)
 
@@ -277,7 +277,7 @@ class FFalgo:
                 name = 'POSCAR_result_' + str(Num_POSCAR)
                 Num_POSCAR += 1
                 OutPutList_value.append((name, self.POSCARS[i][1]))
-                self.POSCARS[i][0].print_POSCAR(name)
+                self.POSCARS[i][0].print_poscar(name)
             if max_count== max_count_limit:
                 OutPutList_value.append(["Global optima found",' '])
         f = open('RESULT_FF','w')
