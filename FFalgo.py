@@ -292,3 +292,5 @@ F = FFalgo(1, 'POSCAR_orig', 'Bi', 'P', ['INCAR_1', 'INCAR_2', 'INCAR_3', 'INCAR
 F.initialize_values(0.1, 0.9, 0.1, 10, 10, 3)
 
 F.run()
+
+#test
