@@ -1,4 +1,4 @@
-from abc import abstractmethod
+
 from copy import deepcopy
 from random import uniform
 import numpy as np
@@ -6,110 +6,107 @@ import numpy as np
 
 atom_radius = {'P': 0.98, 'Bi': 1.43}
 
+def getDistance(x1, x2):
+    return np.sqrt(sum(map(lambda x,y: (x-y)**2 , x1, x2)))
 
-def getdistance(x1, x2):
-    return np.sqrt(sum(map(lambda x, y: (x - y) ** 2, x1, x2)))
-
-
-# minimum_distance_matrix = None
+#
+minimum_distance_matrix = None
 def default_minimum_distance(index_to_atom):
     size = len(index_to_atom)
-    minimum_distance_matrix = [[0 for i in range(size)] for i in range(size)]
+    minimum_distance_matrix = [[0 for i in range(size)]for i in range(size)]
     for i in range(size):
         for j in range(size):
-            if i == j:
-                minimum_distance_matrix[i][j] = 2 * atom_radius[index_to_atom[i]]
+            if i==j:
+                minimum_distance_matrix[i][j] = 2*atom_radius[index_to_atom[i]]
             else:
-                minimum_distance_matrix[i][j] = atom_radius[index_to_atom[i]] + atom_radius[index_to_atom[j]]
+                minimum_distance_matrix[i][j] = atom_radius[index_to_atom[i]]+ atom_radius[index_to_atom[j]]
     return minimum_distance_matrix
 
 
-@abstractmethod
 def change_minimum_distance(matrix):
-    return
+    #abstarct
+    pass
 
-
+# abstract
 Bond_Ch_Matrix = []
-
-
 def is_symmetry_valid(matrix):
     global Bond_Ch_Matrix
     valid = True
     if valid:
         Bond_Ch_Matrix.append(matrix)
     return valid
+def getBondChMatrix(POSCAR):
+    return 0
+#
 
-
-@abstractmethod
-def get_bcm(poscar):
-    return
-
-
-def put_atoms(pos, atom, maxheight, fun=uniform):
-    poscar_new = deepcopy(pos)
+def put_Atoms(POS, atom, maxheight, fun = uniform):
+    POSCAR_new = deepcopy(POS)
     limit = 4  # 4 A
-    zrange = [maxheight, maxheight + limit]
-    atom_idx = poscar_new.atom_to_index[atom]
-    size = len(poscar_new.ATOMS[atom])
+    zRange = [maxheight, maxheight + limit]
+    atom_idx = POSCAR_new.atom_to_index[atom]
+    size = len(POSCAR_new.ATOMS[atom])
 
-    xmat = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[1, 0, 0]]))).flatten()[0]
-    ymat = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[0, 1, 0]]))).flatten()[1]
-    dxdy = np.array([[xmat, 0, 0], [-xmat, 0, 0], [0, ymat, 0], [0, -ymat, 0], [xmat, ymat, 0],
-                     [xmat, -ymat, 0], [-xmat, ymat, 0], [-xmat, -ymat, 0]])
+    # Change
+    X = np.matmul(np.array(POSCAR_new.lattice), np.transpose(np.array([[1, 0, 0]]))).flatten()[0]
+    Y = np.matmul(np.array(POSCAR_new.lattice), np.transpose(np.array([[0, 1, 0]]))).flatten()[1]
+    dxdy = np.array([[X, 0, 0], [-X, 0, 0], [0, Y, 0], [0, -Y, 0], [X, Y, 0], [X, -Y, 0], [-X, Y, 0], [-X, -Y, 0]])
 
     for i in range(size):
-        breakcond = False
-        while not breakcond:
+        BREAK = False
+
+        while not BREAK:
             # TODO: 여기 inv matrix 로 validation check 해야한다.
-            new_coords = list(np.matmul(np.array([fun(0,1),fun(0,1), fun(0,1)]), poscar_new.lattice))
-            new_coords[2] = fun(zrange[0], zrange[1])
+            new_coords = list(np.matmul(np.array([fun(0,1),fun(0,1), fun(0,1)]),POSCAR_new.lattice ))
+            new_coords[2] = fun(zRange[0],zRange[1])
 
             for j in range(i):
-                l = poscar_new.ATOMS[atom][j]
+                L = POSCAR_new.ATOMS[atom][j]
 
-                if getdistance(l, new_coords)<= minimum_distance_matrix[atom_idx][atom_idx]:
+                if getDistance(L, new_coords)<= minimum_distance_matrix[atom_idx][atom_idx]:
                     break
+                # Change
+                L = np.array(L)
+                for newL in [L+i for i in dxdy]:
 
-                l = np.array(l)
-                for newL in [l + i for i in dxdy]:
-
-                    if getdistance(newL, new_coords) <= minimum_distance_matrix[atom_idx][atom_idx]:
+                    if getDistance(newL, new_coords) <= minimum_distance_matrix[atom_idx][atom_idx]:
                         break
                 else:
                     continue
                 break
 
             else:
-                atom_list_without_atom = list(poscar_new.ATOMS.keys())
+                atom_list_without_atom = list(POSCAR_new.ATOMS.keys())
                 atom_list_without_atom.remove(atom)
                 for ATOM_SYMBOl in atom_list_without_atom:
-                    breakcond = False
-                    for k in poscar_new.ATOMS[ATOM_SYMBOl]:
-                        if getdistance(k, new_coords) <= \
-                                minimum_distance_matrix[atom_idx][poscar_new.atom_to_index[ATOM_SYMBOl]]:
+                    BREAK = False
+                    for k in POSCAR_new.ATOMS[ATOM_SYMBOl]:
+                        if getDistance(k, new_coords)<= minimum_distance_matrix[atom_idx][POSCAR_new.atom_to_index[ATOM_SYMBOl]]:
                             break
-
-                        new_k = np.array(k)
-                        for newKCORD in [new_k + i for i in dxdy]:
-                            if getdistance(newKCORD, new_coords) <= \
-                                    minimum_distance_matrix[atom_idx][poscar_new.atom_to_index[ATOM_SYMBOl]]:
+                        # Change
+                        newK = np.array(k)
+                        for newKCORD in [newK+i for i in dxdy]:
+                            if getDistance(newKCORD, new_coords) <= minimum_distance_matrix[atom_idx][POSCAR_new.atom_to_index[ATOM_SYMBOl]]:
                                 break
                         else:
                             continue
                         break
 
                     else:
-                        poscar_new.ATOMS[atom][i] = new_coords
-                        breakcond = True
+                        POSCAR_new.ATOMS[atom][i] = new_coords
 
-    poscar_new.update_atom(atom)
-    return poscar_new
+                        BREAK = True
 
 
-def get_random_structure(pos, atom, maxheight):
-    valid, poscar_new = False, False
+    POSCAR_new.update_atom(atom)
+    POSCAR_new.ATOMS[atom] = sorted(POSCAR_new.ATOMS[atom])
+    return POSCAR_new
+
+def getRandomStructure(POS,atom, maxheight):
+    valid, POSCAR_new = False, False
     while not valid:
-        poscar_new = put_atoms(pos, atom, maxheight)
-        bcm = get_bcm(poscar_new)
-        valid = is_symmetry_valid(bcm)
-    return poscar_new
+        POSCAR_new = put_Atoms(POS, atom, maxheight)
+        B_C_M = getBondChMatrix(POSCAR_new)
+        valid = is_symmetry_valid(B_C_M)
+    return POSCAR_new
+
+
