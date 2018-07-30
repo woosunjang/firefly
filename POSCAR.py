@@ -2,8 +2,8 @@ from __future__ import division , print_function
 from collections import OrderedDict
 from collections import deque
 import numpy as np
-from FireFly.B_C_M import getDistance
-import itertools
+from B_C_M import getDistance
+
 class fileWriter:
     def __init__(self, file):
         self.file = file
@@ -129,7 +129,6 @@ def readPOSCAR(file):
     SelMatrix = [i for i in sel] if Selective else sel
     file.close()
     return POSCAR(atoms, coord, lattice, title, I, Selective, SelMatrix)
-
 def reArrange(Atoms1, Atoms2):
     B = np.zeros((len(Atoms1),len(Atoms1)))
     tmp = [0 for i in range(len(Atoms1))]
