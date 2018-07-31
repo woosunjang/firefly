@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 from collections import OrderedDict, deque
-from B_C_M import getDistance
+from B_C_M import get_distance
 import numpy as np
 import itertools
 
@@ -26,7 +26,7 @@ class POSCAR:
         self.scaling = scaling
         self.selective = selective
         self.s_matrix = s_matrix
-        self.ATOMS = OrderedDict()
+        self.atoms = OrderedDict()
         self.organize_by_atom()
 
         self.index_to_atom = {}
@@ -40,8 +40,9 @@ class POSCAR:
         for atom, num in self.atoms.items():
             idx += idx2
             idx2 += num
-            self.ATOMS[atom] = self.coord[idx:idx2]
+            self.atoms[atom] = self.coord[idx:idx2]
 
+    # TODO : structure file alignment and formatting
     def print_poscar(self, filename):
         file = open(filename, 'w')
         f = FileWriter(file)
@@ -66,7 +67,7 @@ class POSCAR:
 
     def get_max_height_of_atom(self, atom):
         # matrix
-        return max([i[2] for i in self.ATOMS[atom]])
+        return max([i[2] for i in self.atoms[atom]])
 
     def update_atom(self, atom):
         idx = 0
@@ -75,7 +76,7 @@ class POSCAR:
                 break
             else:
                 idx += self.atoms[i]
-        for i in self.ATOMS[atom]:
+        for i in self.atoms[atom]:
             self.coord[idx] = i
             idx += 1
 
@@ -136,7 +137,7 @@ def rearrange(atoms1, atoms2):
     distance_matrix = np.zeros((len(atoms1), len(atoms1)))
     tmp = [0 for i in range(len(atoms1))]
     for i in itertools.product(range(len(atoms1)), repeat=2):
-        distance_matrix[i] = getDistance(np.array(atoms1[i[0]]), np.array(atoms2[i[1]]))
+        distance_matrix[i] = get_distance(np.array(atoms1[i[0]]), np.array(atoms2[i[1]]))
 
     for _ in range(len(atoms1)):
         x, y = np.unravel_index(distance_matrix.argmin(), distance_matrix.shape)
