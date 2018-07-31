@@ -50,10 +50,10 @@ def put_atoms(pos, atom, maxheight, fun=uniform):
     size = len(poscar_new.atoms[atom])
 
     # Change
-    xval = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[1, 0, 0]]))).flatten()[0]
-    yval = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[0, 1, 0]]))).flatten()[1]
-    dxdy = np.array([[xval, 0, 0], [-xval, 0, 0], [0, yval, 0], [0, -yval, 0], 
-                     [xval, yval, 0], [xval, -yval, 0], [-xval, yval, 0], [-xval, -yval, 0]])
+    x_val = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[1, 0, 0]]))).flatten()[0]
+    y_val = np.matmul(np.array(poscar_new.lattice), np.transpose(np.array([[0, 1, 0]]))).flatten()[1]
+    dxdy = np.array([[x_val, 0, 0], [-x_val, 0, 0], [0, y_val, 0], [0, -y_val, 0],
+                     [x_val, y_val, 0], [x_val, -y_val, 0], [-x_val, y_val, 0], [-x_val, -y_val, 0]])
 
     for i in range(size):
         break_cond = False
@@ -64,13 +64,13 @@ def put_atoms(pos, atom, maxheight, fun=uniform):
             new_coords[2] = fun(z_range[0], z_range[1])
 
             for j in range(i):
-                L = poscar_new.atoms[atom][j]
+                coord_matrix = poscar_new.atoms[atom][j]
 
-                if get_distance(L, new_coords) <= minimum_distance_matrix[atom_idx][atom_idx]:
+                if get_distance(coord_matrix, new_coords) <= minimum_distance_matrix[atom_idx][atom_idx]:
                     break
                 # Change
-                L = np.array(L)
-                for newL in [L + i for i in dxdy]:
+                coord_matrix = np.array(coord_matrix)
+                for newL in [coord_matrix + i for i in dxdy]:
 
                     if get_distance(newL, new_coords) <= minimum_distance_matrix[atom_idx][atom_idx]:
                         break
