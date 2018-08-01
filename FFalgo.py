@@ -264,15 +264,16 @@ class FFalgo:
                         self.move_FF(self.POSCARS[i][0],self.POSCARS[j][0])
                         self.POSCAR_optimize(first_step,i)
             idx_Value_List = [(i, tmp[1])for i , tmp in enumerate(self.POSCARS)]
-            idx_Value_List  = sorted(idx_Value_List, key = operator.itemgetter(1))
+
+            idx_Value_List = sorted(idx_Value_List, key=operator.itemgetter(1), reverse=True)
             for i in range(self.rate):
-                name = 'POSCAR_result_'+ str(Num_POSCAR)
-                Num_POSCAR+=1
+                name = 'POSCAR_result_' + str(Num_POSCAR)
+                Num_POSCAR += 1
                 OutPutList_value.append((name, self.POSCARS[i][1]))
                 self.POSCARS[i][0].print_POSCAR(name)
                 self.makerandomStructures(idx_Value_List[i][0])
-                self.POSCAR_optimize(first_step,i)
 
+                self.POSCAR_optimize(first_step, idx_Value_List[i][0])
             tt = idx_Value_List[-1][0]
             if tt == max_idx:
                 max_idx = tt
