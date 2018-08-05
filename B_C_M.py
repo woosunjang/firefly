@@ -1,7 +1,8 @@
 from copy import deepcopy
 from random import uniform
 import numpy as np
-
+import itertools
+import scipy.optimize
 
 atom_radius = {'P': 0.98, 'Bi': 1.43}
 
@@ -107,3 +108,88 @@ def getRandomStructure(POS,atom, maxheight):
         valid = is_symmetry_valid(B_C_M)
     return POSCAR_new
 
+
+# 0: eps, 1: sigma
+eps_sigma_dict = {'Bi': {'P' : [1,1], 'Bi': [1,1]}, 'P': {'Bi': [1,1],'P':[1,1]}}
+
+
+def set_eps_sigma():
+    pass
+
+
+def get_eps_sigma(atom1, atom2):
+    return eps_sigma_dict[atom1][atom2]
+
+
+def lj_potential_atoms(atom1, atom2, dis):
+    eps, sigma = get_eps_sigma(atom1, atom2)
+    return 4*eps*((sigma/dis)**12 - (sigma/dis)**6)
+
+def lj_force_magnitude_atoms(atom1, atom2 , dis):
+    eps, sigma = get_eps_sigma(atom1, atom2)
+    if dis< 1E-08 :
+        dis = 1E-08
+    return 48*eps*((sigma/dis)**12 - 0.5*((sigma/dis)**6))/(dis**2)
+
+
+
+def lj_potential_poscar(poscar):
+    total_atom = poscar.atoms.keys()
+    total_energy = 0
+    for atom1,atom2 in itertools.combinations_with_replacement(total_atom, 2):
+        if atom1 == atom2:
+            for pos1, pos2 in itertools.combinations(poscar.ATOMS[atom1], 2):
+                total_energy += lj_potential_atoms(atom1, atom2, getDistance(pos1, pos2))
+        else:
+            for pos1, pos2 in itertools.product(poscar.ATOMS[atom1], poscar.ATOMS[atom2]):
+                total_energy += lj_potential_atoms(atom1, atom2, getDistance(pos1, pos2))
+    return total_energy
+
+
+def lj_force_for_optimize(pos, poscar, target_atom):
+    pos = list(np.array(pos).reshape((-1, 3)))
+    poscar.ATOMS[target_atom] = pos
+    f = np.zeros((len(pos), 3))
+    total_atoms = poscar.atoms.keys()
+    for atom2 in total_atoms:
+        if target_atom == atom2:
+            for idx in range(len(pos)-1):
+                for idx2 in range(idx+1, len(pos)):
+                    pos_idx, pos_idx2 = np.array(pos[idx]), np.array(pos[idx2])
+                    vec = pos_idx2 - pos_idx
+                    mag = lj_force_magnitude_atoms(target_atom, atom2,getDistance(pos_idx, pos_idx2))
+                    f[idx] -= mag*vec
+                    f[idx2] += mag*vec
+        else:
+            for idx in range(len(pos)):
+                for pos_other in poscar.ATOMS[atom2]:
+                    pos_idx, pos_other = np.array(pos[idx]), np.array(pos_other)
+                    vec = pos_other - pos_idx
+                    mag = lj_force_magnitude_atoms(target_atom, atom2, getDistance(pos_idx, pos_other))
+                    f[idx] -= mag*vec
+    return f.flatten()
+
+
+def lj_potential_for_optimize(pos, poscar, target_atom):
+    pos = list(np.array(pos).reshape((-1,3)))
+    poscar.ATOMS[target_atom] = pos
+    return lj_potential_poscar(poscar)
+
+def lj_gradient(pos, poscar, target_atom):
+    return -lj_force_for_optimize(pos, poscar, target_atom)
+
+
+def lj_optimize(poscar, target_atom, method='BFGS'):
+    if method in ['Nelder-Mead', 'Powell']:
+        jac = None
+        options = {'maxiter': 200, 'disp': False}
+    else:
+        jac = lj_gradient
+        options = {'gtol': 1E-5, 'disp': False}
+    first_x = np.array(poscar.ATOMS[target_atom]).flatten()
+    final_x = scipy.optimize.minimize(lj_potential_for_optimize, first_x, args=(poscar, target_atom),
+                                      method=method, jac=jac, options=options)
+
+    poscar.ATOMS[target_atom] = list(np.array(final_x.x).reshape((-1,3)))
+    poscar.update_atom(target_atom)
+    return poscar

@@ -3,6 +3,7 @@ from collections import OrderedDict
 from collections import deque
 import numpy as np
 from B_C_M import getDistance
+import itertools
 
 class fileWriter:
     def __init__(self, file):
