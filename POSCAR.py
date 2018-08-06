@@ -2,8 +2,10 @@ from __future__ import division , print_function
 from collections import OrderedDict
 from collections import deque
 import numpy as np
-from FireFly.B_C_M import getDistance
+from B_C_M import getDistance
 import itertools
+
+
 class fileWriter:
     def __init__(self, file):
         self.file = file
